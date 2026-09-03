@@ -44,7 +44,8 @@ export default function AddItemFlow({ uid, onClose, onSaved }) {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   const canvasRef = useRef(null);
 
   function handleFilePick(e) {
@@ -157,7 +158,8 @@ export default function AddItemFlow({ uid, onClose, onSaved }) {
         {step === 0 && (
           <CaptureStep
             originalPreview={originalPreview}
-            onPick={() => fileInputRef.current?.click()}
+            onPickCamera={() => cameraInputRef.current?.click()}
+            onPickGallery={() => galleryInputRef.current?.click()}
             uploading={uploading}
             uploadError={uploadError}
             onContinue={handleUploadAndContinue}
@@ -212,10 +214,17 @@ export default function AddItemFlow({ uid, onClose, onSaved }) {
       </div>
 
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
+        onChange={handleFilePick}
+        style={{ display: "none" }}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
         onChange={handleFilePick}
         style={{ display: "none" }}
       />
@@ -224,13 +233,13 @@ export default function AddItemFlow({ uid, onClose, onSaved }) {
   );
 }
 
-function CaptureStep({ originalPreview, onPick, uploading, uploadError, onContinue, hasFile }) {
+function CaptureStep({ originalPreview, onPickCamera, onPickGallery, uploading, uploadError, onContinue, hasFile }) {
   return (
     <div style={styles.stepWrap}>
       <h2 style={styles.stepTitle}>Foto toevoegen</h2>
-      <p style={styles.stepSubtitle}>Maak een foto of kies er een uit je bibliotheek.</p>
+      <p style={styles.stepSubtitle}>Maak een foto of kies er een uit je galerij/bestanden.</p>
 
-      <div style={styles.photoDrop} onClick={onPick}>
+      <div style={styles.photoDrop} onClick={onPickGallery}>
         {originalPreview ? (
           <img src={originalPreview} alt="" style={styles.photoPreview} />
         ) : (
@@ -240,9 +249,12 @@ function CaptureStep({ originalPreview, onPick, uploading, uploadError, onContin
 
       {uploadError && <div style={styles.errorBox}>{uploadError}</div>}
 
-      <button onClick={onPick} style={styles.secondaryBtn}>
-        {hasFile ? "Andere foto kiezen" : "Foto kiezen"}
-      </button>
+      <div style={styles.pickRow}>
+        <button onClick={onPickCamera} style={styles.secondaryBtn}>Foto maken</button>
+        <button onClick={onPickGallery} style={styles.secondaryBtn}>
+          {hasFile ? "Andere foto kiezen" : "Uit galerij kiezen"}
+        </button>
+      </div>
       <button onClick={onContinue} disabled={!hasFile || uploading} style={styles.primaryBtn}>
         {uploading ? "Bezig met uploaden..." : "Doorgaan"}
       </button>
@@ -424,9 +436,10 @@ const styles = {
     overflow: "hidden", marginBottom: 4,
   },
   photoPreview: { width: "100%", height: "100%", objectFit: "cover" },
+  pickRow: { display: "flex", gap: 8 },
   secondaryBtn: {
-    padding: "13px 0", borderRadius: 14, border: `0.5px solid ${COLORS.border}`,
-    background: COLORS.surface, color: COLORS.textDark, fontSize: 14, fontWeight: 600,
+    flex: 1, padding: "13px 0", borderRadius: 14, border: `0.5px solid ${COLORS.border}`,
+    background: COLORS.surface, color: COLORS.textDark, fontSize: 13.5, fontWeight: 600,
   },
   primaryBtn: {
     padding: "14px 0", borderRadius: 50, border: "none", fontFamily: FONT_SERIF,
