@@ -1,0 +1,57 @@
+:root {
+  --klozi-primary: #B8A9C9;
+  --klozi-primary-light: #E8E0F0;
+  --klozi-blush: #F2D4D7;
+  --klozi-mint: #C5E0D8;
+  --klozi-surface: #FEFCFA;
+  --klozi-bg: #FBF8F5;
+  --klozi-text: #2D2A32;
+  --klozi-text-muted: rgba(45, 42, 50, 0.45);
+  --klozi-card: #FFFFFF;
+  --klozi-border: rgba(184, 169, 201, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --klozi-surface: #1C1A20;
+    --klozi-bg: #14121A;
+    --klozi-text: #F0ECF4;
+    --klozi-text-muted: rgba(240, 236, 244, 0.45);
+    --klozi-card: #242028;
+    --klozi-border: rgba(184, 169, 201, 0.12);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--klozi-bg);
+  color: var(--klozi-text);
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+input, button, select, textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
