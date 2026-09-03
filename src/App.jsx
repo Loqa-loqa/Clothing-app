@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { watchAuth, getUserDoc, logout } from "./firebase.js";
+import { watchAuth, getUserDoc } from "./firebase.js";
 import { COLORS, FONT_SERIF } from "./shared.js";
 import AuthScreen from "./screens/AuthScreen.jsx";
 import ClosetScreen from "./screens/ClosetScreen.jsx";
+import ProfileScreen from "./screens/ProfileScreen.jsx";
+import OutfitBuilderScreen from "./screens/OutfitBuilderScreen.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 
 export default function App() {
@@ -14,13 +16,21 @@ export default function App() {
   useEffect(() => {
     const unsub = watchAuth(async (user) => {
       setFirebaseUser(user);
-      if (user) {
-        const doc = await getUserDoc(user.uid);
-        setUserDoc(doc);
-      } else {
+      try {
+        if (user) {
+          const doc = await getUserDoc(user.uid);
+          setUserDoc(doc);
+        } else {
+          setUserDoc(null);
+        }
+      } catch (err) {
+        // Never let a failed/slow Firestore read leave the app stuck on the
+        // splash screen — log it and continue with whatever we have.
+        console.error("Kon gebruikersdocument niet laden:", err);
         setUserDoc(null);
+      } finally {
+        setAuthLoading(false);
       }
-      setAuthLoading(false);
     });
     return unsub;
   }, []);
@@ -37,9 +47,22 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: COLORS.cream, paddingBottom: 76 }}>
       {screen === "home" && <PlaceholderScreen title="Today" subtitle="Je dashboard komt hier — weer, outfit van vandaag, statistieken." />}
       {screen === "closet" && <ClosetScreen uid={firebaseUser.uid} />}
-      {screen === "builder" && <PlaceholderScreen title="Create" subtitle="De outfit builder (met tuck & layer systeem) volgt in de volgende fase." />}
+      {screen === "builder" && (
+        <OutfitBuilderScreen
+          uid={firebaseUser.uid}
+          userDoc={userDoc}
+          onGoToProfile={() => setScreen("profile")}
+        />
+      )}
       {screen === "calendar" && <PlaceholderScreen title="Calendar" subtitle="Outfit planner met weersvoorspelling volgt later." />}
-      {screen === "profile" && <ProfileScreen userDoc={userDoc} firebaseUser={firebaseUser} />}
+      {screen === "profile" && (
+        <ProfileScreen
+          uid={firebaseUser.uid}
+          userDoc={userDoc}
+          firebaseUser={firebaseUser}
+          onUserDocChange={setUserDoc}
+        />
+      )}
 
       <BottomNav active={screen} onChange={setScreen} />
     </div>
@@ -69,58 +92,6 @@ function PlaceholderScreen({ title, subtitle }) {
     <div style={{ padding: "60px 24px", textAlign: "center" }}>
       <h1 style={{ fontFamily: FONT_SERIF, fontSize: 26, color: COLORS.textDark, margin: "0 0 8px" }}>{title}</h1>
       <p style={{ color: COLORS.textMuted, fontSize: 14, lineHeight: 1.5 }}>{subtitle}</p>
-    </div>
-  );
-}
-
-function ProfileScreen({ userDoc, firebaseUser }) {
-  return (
-    <div style={{ padding: "40px 24px" }}>
-      <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            margin: "0 auto 12px",
-            background: `linear-gradient(155deg, ${COLORS.primaryLight} 0%, ${COLORS.primary} 100%)`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontFamily: FONT_SERIF,
-            fontSize: 26,
-            fontWeight: 700,
-            overflow: "hidden",
-          }}
-        >
-          {firebaseUser.photoURL ? (
-            <img src={firebaseUser.photoURL} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            (userDoc?.displayName || firebaseUser.email || "?").charAt(0).toUpperCase()
-          )}
-        </div>
-        <h2 style={{ fontFamily: FONT_SERIF, fontSize: 20, margin: 0, color: COLORS.textDark }}>
-          {userDoc?.displayName || firebaseUser.displayName || "Style lover"}
-        </h2>
-        <p style={{ color: COLORS.textMuted, fontSize: 13, margin: "2px 0 0" }}>{firebaseUser.email}</p>
-      </div>
-
-      <button
-        onClick={() => logout()}
-        style={{
-          width: "100%",
-          padding: "13px 0",
-          borderRadius: 14,
-          border: `0.5px solid ${COLORS.border}`,
-          background: COLORS.surface,
-          color: COLORS.textDark,
-          fontSize: 14,
-          fontWeight: 600,
-        }}
-      >
-        Uitloggen
-      </button>
     </div>
   );
 }
