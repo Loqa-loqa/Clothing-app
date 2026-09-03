@@ -55,6 +55,28 @@ export default function AddItemFlow({ uid, onClose, onSaved }) {
     setOriginalPreview(URL.createObjectURL(f));
   }
 
+  // Allow pasting a copied image (Cmd+V / Ctrl+V) while on the capture step.
+  useEffect(() => {
+    if (step !== 0) return;
+    function handlePaste(e) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type && item.type.startsWith("image/")) {
+          const blob = item.getAsFile();
+          if (blob) {
+            setFile(blob);
+            setOriginalPreview(URL.createObjectURL(blob));
+          }
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [step]);
+
   async function handleUploadAndContinue() {
     if (!file) return;
     setUploadError("");
@@ -237,7 +259,7 @@ function CaptureStep({ originalPreview, onPickCamera, onPickGallery, uploading, 
   return (
     <div style={styles.stepWrap}>
       <h2 style={styles.stepTitle}>Foto toevoegen</h2>
-      <p style={styles.stepSubtitle}>Maak een foto of kies er een uit je galerij/bestanden.</p>
+      <p style={styles.stepSubtitle}>Maak een foto, kies er een uit je galerij/bestanden, of plak een gekopieerde foto (Cmd+V / Ctrl+V).</p>
 
       <div style={styles.photoDrop} onClick={onPickGallery}>
         {originalPreview ? (
