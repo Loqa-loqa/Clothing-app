@@ -1,3 +1,4 @@
+cat > src/App.jsx << 'EOF'
 import { useEffect, useState } from "react";
 import { watchAuth, getUserDoc } from "./firebase.js";
 import { COLORS, FONT_SERIF } from "./shared.js";
@@ -24,8 +25,6 @@ export default function App() {
           setUserDoc(null);
         }
       } catch (err) {
-        // Never let a failed/slow Firestore read leave the app stuck on the
-        // splash screen — log it and continue with whatever we have.
         console.error("Kon gebruikersdocument niet laden:", err);
         setUserDoc(null);
       } finally {
@@ -95,3 +94,4 @@ function PlaceholderScreen({ title, subtitle }) {
     </div>
   );
 }
+EOF
