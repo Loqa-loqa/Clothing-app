@@ -1,4 +1,3 @@
-cat > src/App.jsx << 'EOF'
 import { useEffect, useState } from "react";
 import { watchAuth, getUserDoc } from "./firebase.js";
 import { COLORS, FONT_SERIF } from "./shared.js";
@@ -94,4 +93,3 @@ function PlaceholderScreen({ title, subtitle }) {
     </div>
   );
 }
-EOF
