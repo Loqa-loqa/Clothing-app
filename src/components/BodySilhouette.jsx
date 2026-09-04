@@ -1,4 +1,4 @@
-/ Parametric SVG body silhouette — deforms based on a "shape" object so the
+// Parametric SVG body silhouette — deforms based on a "shape" object so the
 // user can preview roughly how their own body proportions look, and outfits
 // can be laid over it. No external assets, pure SVG shapes.
 import { COLORS } from "../shared.js";
