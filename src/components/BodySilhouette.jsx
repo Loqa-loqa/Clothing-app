@@ -31,7 +31,41 @@ export function mergeBodyShape(bodyShape) {
 function clamp(v, min, max) {
   return Math.min(max, Math.max(min, v));
 }
+// Returns key landmark positions and widths (in the same 240x560 viewBox
+// coordinate space the SVG uses) for a given body shape, after applying the
+// same height-driven scale transform the silhouette itself uses. Used by the
+// Outfit Builder to position clothing photos so they actually track the
+// body's proportions (wider hips push the bottoms overlay wider, etc.)
+// instead of sitting in a fixed box regardless of the sliders.
+export function getPoseMetrics(shape) {
+  const s = mergeBodyShape(shape);
+  const scale = 0.75 + ((clamp(s.heightCm, 140, 200) - 140) / 60) * 0.5;
 
+  const shoulderW = 78 * (1 + s.shoulders * 0.3) * (1 + s.build * 0.12);
+  const chestW = 70 * (1 + s.chest * 0.3) * (1 + s.build * 0.15);
+  const waistW = 54 * (1 + s.waist * 0.35) * (1 + s.build * 0.18);
+  const hipW = 72 * (1 + s.hips * 0.3) * (1 + s.build * 0.16);
+
+  const cx = 120;
+  const yHeadTop = 20, yShoulder = 96, yChest = 150, yWaist = 210, yHip = 250, yFeet = 540;
+  // Same pivot transform as the SVG: translate(cx yFeet) scale(scale) translate(-cx -yFeet)
+  const ty = (y) => yFeet + scale * (y - yFeet);
+
+  return {
+    cx,
+    scale,
+    yHeadTop: ty(yHeadTop),
+    yShoulder: ty(yShoulder),
+    yChest: ty(yChest),
+    yWaist: ty(yWaist),
+    yHip: ty(yHip),
+    yFeet,
+    shoulderW: shoulderW * scale,
+    chestW: chestW * scale,
+    waistW: waistW * scale,
+    hipW: hipW * scale,
+  };
+}
 // A tapered capsule/limb segment from (xTop,yTop,wTop) to (xBottom,yBottom,wBottom),
 // with rounded caps — reads as a soft tapered limb instead of a blocky rectangle.
 // Supports xTop !== xBottom so limbs can bend/angle, not just go straight down.
