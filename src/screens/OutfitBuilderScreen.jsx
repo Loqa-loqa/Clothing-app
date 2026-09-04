@@ -1,21 +1,51 @@
 import { useEffect, useMemo, useState } from "react";
 import { watchItems, addOutfit } from "../firebase.js";
 import { COLORS, FONT_SERIF, CATEGORIES, CATEGORY_LABELS, DEFAULT_LAYER, haptic } from "../shared.js";
-import BodySilhouette, { mergeBodyShape } from "../components/BodySilhouette.jsx";
+import BodySilhouette, { mergeBodyShape, getPoseMetrics } from "../components/BodySilhouette.jsx";
 
-// Where each category's photo lands on top of the silhouette (percentages of
-// the preview box), and in what stacking order.
-const ANCHOR_BOXES = {
-  accessories: { top: "1%", left: "30%", width: "40%", height: "16%" },
-  outerwear: { top: "15%", left: "11%", width: "78%", height: "34%" },
-  tops: { top: "16%", left: "16%", width: "68%", height: "30%" },
-  dresses: { top: "16%", left: "18%", width: "64%", height: "62%" },
-  activewear: { top: "16%", left: "18%", width: "64%", height: "62%" },
-  swimwear: { top: "16%", left: "18%", width: "64%", height: "62%" },
-  bottoms: { top: "36%", left: "20%", width: "60%", height: "48%" },
-  shoes: { top: "88%", left: "22%", width: "56%", height: "12%" },
-  bags: { top: "48%", left: "66%", width: "26%", height: "22%" },
-};
+// Builds where each category's photo lands on top of the silhouette, driven
+// by the person's actual body-shape metrics (shoulder/waist/hip width,
+// height scale) instead of fixed percentages — so a wider hips slider
+// actually widens the bottoms overlay, a taller height stretches things
+// down, etc. Everything is expressed in the same 240x560 viewBox space the
+// silhouette itself uses, then converted to percentages of the preview box.
+function buildAnchorBoxes(metrics) {
+  const { cx, yHeadTop, yShoulder, yWaist, yHip, yFeet, shoulderW, chestW, hipW } = metrics;
+  const xPct = (x) => `${(x / 240) * 100}%`;
+  const yPct = (y) => `${(y / 560) * 100}%`;
+  const wPct = (w) => `${(w / 240) * 100}%`;
+  const hPct = (h) => `${(h / 560) * 100}%`;
+
+  const topsWidth = shoulderW * 1.4;
+  const topsTop = yShoulder - 16;
+  const topsHeight = yWaist - topsTop + 18;
+
+  const outerWidth = shoulderW * 1.55;
+  const outerTop = yShoulder - 20;
+  const outerHeight = yWaist - outerTop + 44;
+
+  const bottomsWidth = hipW * 1.3;
+  const bottomsTop = yWaist - 8;
+  const bottomsHeight = (yFeet - bottomsTop) * 0.6;
+
+  const dressWidth = Math.max(shoulderW, hipW) * 1.35;
+  const dressTop = yShoulder - 16;
+  const dressHeight = yFeet * 0.86 - dressTop;
+
+  const accessoriesWidth = chestW * 1.15;
+
+  return {
+    accessories: { top: yPct(yHeadTop - 4), left: xPct(cx - accessoriesWidth / 2), width: wPct(accessoriesWidth), height: hPct(60) },
+    outerwear: { top: yPct(outerTop), left: xPct(cx - outerWidth / 2), width: wPct(outerWidth), height: hPct(outerHeight) },
+    tops: { top: yPct(topsTop), left: xPct(cx - topsWidth / 2), width: wPct(topsWidth), height: hPct(topsHeight) },
+    dresses: { top: yPct(dressTop), left: xPct(cx - dressWidth / 2), width: wPct(dressWidth), height: hPct(dressHeight) },
+    activewear: { top: yPct(dressTop), left: xPct(cx - dressWidth / 2), width: wPct(dressWidth), height: hPct(dressHeight) },
+    swimwear: { top: yPct(dressTop), left: xPct(cx - dressWidth / 2), width: wPct(dressWidth), height: hPct(dressHeight) },
+    bottoms: { top: yPct(bottomsTop), left: xPct(cx - bottomsWidth / 2), width: wPct(bottomsWidth), height: hPct(bottomsHeight) },
+    shoes: { top: yPct(yFeet - 42), left: xPct(cx - hipW * 0.95), width: wPct(hipW * 1.9), height: hPct(52) },
+    bags: { top: yPct(yHip + 10), left: xPct(cx + hipW * 0.55), width: wPct(hipW * 0.75), height: hPct(92) },
+  };
+}
 
 // Categories offered as quick tabs, in a sensible outfit-building order.
 const BUILD_TABS = ["dresses", "tops", "bottoms", "outerwear", "shoes", "bags", "accessories"];
@@ -38,6 +68,8 @@ export default function OutfitBuilderScreen({ uid, userDoc, onGoToProfile }) {
   }, [uid]);
 
   const shape = useMemo(() => mergeBodyShape(userDoc?.bodyShape), [userDoc]);
+  const poseMetrics = useMemo(() => getPoseMetrics(shape), [shape]);
+  const anchorBoxes = useMemo(() => buildAnchorBoxes(poseMetrics), [poseMetrics]);
 
   const itemsForTab = useMemo(() => {
     if (!items) return [];
@@ -115,7 +147,7 @@ export default function OutfitBuilderScreen({ uid, userDoc, onGoToProfile }) {
               style={{
                 position: "absolute",
                 zIndex: DEFAULT_LAYER[category] ?? 2,
-                ...ANCHOR_BOXES[category],
+                ...anchorBoxes[category],
               }}
             >
               {item.photoUrl ? (
@@ -208,7 +240,10 @@ const styles = {
     marginBottom: 16,
   },
   previewInner: { position: "relative", height: 340, margin: "0 auto" },
-  layerImg: { width: "100%", height: "100%", objectFit: "contain" },
+  layerImg: {
+    width: "100%", height: "100%", objectFit: "contain",
+    filter: "drop-shadow(0 6px 10px rgba(45,42,50,0.14))",
+  },
   emptyHint: { textAlign: "center", fontSize: 12.5, color: COLORS.textMuted, margin: "8px 0 0" },
   tabRow: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 14 },
   tab: {
