@@ -11,7 +11,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import {
-  getFirestore,
+  initializeFirestore,
   collection,
   doc,
   setDoc,
@@ -38,7 +38,14 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Some networks/security software (antivirus "web protection", strict
+// firewalls) kill Firestore's normal long-lived WebChannel streaming
+// connection with net::ERR_CONNECTION_CLOSED — auto-detecting long polling
+// makes the SDK fall back to plain short-lived HTTP requests instead, which
+// gets through those environments much more reliably.
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+});
 export const googleProvider = new GoogleAuthProvider();
 
 // ---- Auth helpers ----
